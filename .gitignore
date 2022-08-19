@@ -2,6 +2,9 @@
 cmake-build-debug/
 .vs/
 
+# intellij configs
+.idea/
+
 # Compiled Object files
 *.slo
 *.lo
