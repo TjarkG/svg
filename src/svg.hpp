@@ -1,9 +1,15 @@
 /** @file */
+//svg.hpp from https://github.com/vincentlaucsb/svg
+
+#ifndef _SVG_H_
+#define _SVG_H_
+
 #pragma once
 #define PI 3.14159265
 #define RAD_TO_DEG (180/PI)
 #define SVG_TYPE_CHECK static_assert(std::is_base_of<Element, T>::value, "Child must be an SVG element.")
 #define APPROX_EQUALS(x, y, tol) bool(abs(x - y) < tol)
+
 #include <iostream>
 #include <algorithm> // min, max
 #include <fstream>   // ofstream
@@ -38,8 +44,8 @@ namespace SVG {
     using SVGAttrib = std::map<std::string, std::string>;
     using Point = std::pair<double, double>;
     using Margins = QuadCoord;
-    const static Margins DEFAULT_MARGINS = { 10, 10, 10, 10 };
-    const static Margins NO_MARGINS = { 0, 0, 0, 0 };
+    const static Margins DEFAULT_MARGINS { 10, 10, 10, 10 };
+    const static Margins NO_MARGINS { 0, 0, 0, 0 };
 
     inline std::string to_string(const double& value);
     inline std::string to_string(const Point& point);
@@ -87,8 +93,7 @@ namespace SVG {
         }
 
         inline Orientation orientation(Point& p1, Point& p2, Point& p3) {
-            double value = ((p2.second - p1.second) * (p3.first - p2.first) -
-                (p2.first - p1.first) * (p3.second - p2.second));
+            double value {((p2.second - p1.second) * (p3.first - p2.first) - (p2.first - p1.first) * (p3.second - p2.second))};
             
             if (value == 0) return COLINEAR;
             else if (value > 0) return CLOCKWISE;
@@ -106,19 +111,19 @@ namespace SVG {
             std::vector<Point> hull;
 
             // Find leftmost point (ties don't matter)
-            int left = 0;
-            for (size_t i = 0; i < points.size(); i++)
+            int left {0};
+            for (size_t i {0}; i < points.size(); i++)
                 if (points[i].first < points[left].first) left = (int)i;
             
             // While we don't reach leftmost point
-            int current = left, next;
+            int current {left}, next;
             do {
                 // Add to convex hull
                 hull.push_back(points[current]);
 
                 // Keep moving counterclockwise
                 next = (current + 1) % points.size();
-                for (size_t i = 0; i < points.size(); i++) {
+                for (size_t  i {0}; i < points.size(); i++) {
                     // We've found a more counterclockwise point --> update next
                     if (orientation(points[current], points[next], points[i]) == COUNTERCLOCKWISE)
                         next = (int)i;
@@ -138,7 +143,7 @@ namespace SVG {
              *  a convex polygon
              */
             std::vector<Point> ret;
-            for (double degree = 0; degree < 360; degree += 360/n) {
+            for (double degree {0}; degree < 360; degree += 360/n) {
                 ret.push_back(Point(
                     a + radius * cos(degree * (PI/180)), // 1 degree = pi/180 radians
                     b + radius * sin(degree * (PI/180))
@@ -152,7 +157,7 @@ namespace SVG {
     inline std::string to_string(const double& value) {
         /** Trim off all but one decimal place when converting a double to string */
         std::stringstream ss;
-        ss << std::fixed << std::setprecision(1);
+        ss << std::fixed << std::setprecision(2);
         ss << value;
         return ss.str();
     }
@@ -173,7 +178,7 @@ namespace SVG {
 
             template<typename T>
             AttrSetter& operator<<(T value) {
-                attr += std::to_string(value);
+                attr += to_string(value);
                 return *this;
             }
         };
@@ -184,7 +189,7 @@ namespace SVG {
 
         template<typename T>
         AttributeMap& set_attr(const std::string key, T value) {
-            this->attr[key] = std::to_string(value);
+            this->attr[key] = to_string(value);
             return *this;
         }
 
@@ -418,8 +423,9 @@ namespace SVG {
         };
 
         SVG(SVGAttrib _attr =
-                { { "xmlns", "http://www.w3.org/2000/svg" } }
+                { { "xmlns:svg", "http://www.w3.org/2000/svg" }, { "xmlns:sodipodi", "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" }, { "xmlns:inkscape", "http://www.inkscape.org/namespaces/inkscape" } }
         ) : Shape(_attr) {}; /**< Create an <svg> with specified attributes */
+
         AttributeMap& style(const std::string& key) { return this->css->css[key]; }
 
         std::map<std::string, AttributeMap>& keyframes(const std::string& key) {
@@ -431,7 +437,7 @@ namespace SVG {
             return this->css->keyframes[key];
         }
 
-        Style* css = this->add_child<Style>(); /**< This item's associated CSS stylesheet */
+        Style* css {this->add_child<Style>()}; /**< This item's associated CSS stylesheet */
 
     protected:
         std::string tag() override { return "svg"; }
@@ -446,12 +452,12 @@ namespace SVG {
             /** Start line at (x, y)
              *  This function overwrites the current path if it exists
              */
-            this->attr["d"] = "M " + std::to_string(x) + " " + std::to_string(y);
+            this->attr["d"] = "M " + to_string(x) + " " + to_string(y);
             this->points.clear();
             this->points.push_back(std::make_pair(x, y));
         }
 
-        inline void start(SVG::Point coord) {
+        inline void start(std::pair<double, double> coord) {
             this->start(coord.first, coord.second);
         }
 
@@ -466,19 +472,19 @@ namespace SVG {
                 start(x, y);
             else
             {
-                this->attr["d"] += " L " + std::to_string(x) + " " + std::to_string(y);
+                this->attr["d"] += " L " + to_string(x) + " " + to_string(y);
                 this->points.push_back(std::make_pair(x, y));
             }
         }
 
-        inline void line_to(SVG::Point coord) {
+        inline void line_to(std::pair<double, double> coord) {
             this->line_to(coord.first, coord.second);
         }
 
         template<typename T>
         inline void curve_to(T rx, T ry, T r, int bf, int af, T x, T y) {
             /** Draw a curve to (x, y) with the supplied arguments.
-             *  If path has not been initialized by setting a starting point,
+             *  If line has not been initialized by setting a starting point,
              *  then start() will be called with (x, y) as arguments
              */
 
@@ -486,18 +492,18 @@ namespace SVG {
                 start(x, y);
             else
             {
-                this->attr["d"] += " A " + std::to_string(rx) + " " + std::to_string(ry) + " " + std::to_string(r) + " " + std::to_string(bf) + " " + std::to_string(af) + " " + std::to_string(x) + " " + std::to_string(y);
+                this->attr["d"] += " A " + to_string(rx) + " " + to_string(ry) + " " + to_string(r) + " " + std::to_string(bf) + " " + std::to_string(af) + " " + to_string(x) + " " + to_string(y);
                 this->points.push_back(std::make_pair(x, y));
             }
         }
 
-        inline void curve_to(double rx, double ry, double r, int bf, int af, SVG::Point coord) {
+        inline void curve_to(double rx, double ry, double r, int bf, int af, std::pair<double, double> coord) {
             this->curve_to(rx, ry, r, bf, af, coord.first, coord.second);
         }
 
         inline void to_origin() {
             /** Draw a line back to the origin */
-            this->line_to(points.front());
+            this->attr["d"] += " Z ";
         }
 
     protected:
@@ -533,6 +539,13 @@ namespace SVG {
         using Element::Element;
     protected:
         std::string tag() override { return "g"; }
+    };
+
+    class NameDev : public Element {
+    public:
+        using Element::Element;
+    protected:
+        std::string tag() override { return "sodipodi:namedview"; }
     };
 
     class Line : public Shape {
@@ -575,12 +588,13 @@ namespace SVG {
         using Shape::Shape;
 
         Rect(
-            double x, double y, double width, double height) :
+            double x, double y, double width, double height, double rotation) :
             Shape({
                     { "x", to_string(x) },
                     { "y", to_string(y) },
                     { "width", to_string(width) },
-                    { "height", to_string(height) }
+                    { "height", to_string(height) },
+                    { "transform", "rotate(" + to_string(rotation) + "," + to_string(x + 0.5*width) + "," + to_string(y + 0.5*height) + " )"}
             }) {};
 
         Element::BoundingBox get_bbox() override;
@@ -629,42 +643,42 @@ namespace SVG {
         std::string tag() override { return "polygon"; }
     };
 
-    inline Element::BoundingBox Line::get_bbox() {
-        return { x1(), x2(), y1(), y2() };
-    }
+inline Element::BoundingBox Line::get_bbox() {
+    return { x1(), x2(), y1(), y2() };
+}
 
-    //return the outer most point in each direction and hope path doesnt go furter out
-    //always works for straight lines, but sometimes not for curves
-    inline Element::BoundingBox Path::get_bbox()
+//return the outer most point in each direction and hope path doesnt go furter out
+//always works for straight lines, but sometimes not for curves
+inline Element::BoundingBox Path::get_bbox()
+{
+    Element::BoundingBox tmp{0, 0, 0, 0};
+    for(auto p : points)
     {
-        Element::BoundingBox tmp{0, 0, 0, 0};
-        for(auto p : points)
-        {
-            if(p.first < tmp.x1) tmp.x1 = p.first;
-            if(p.second < tmp.y1) tmp.y1 = p.second;
-            if(p.first > tmp.x2) tmp.x2 = p.first;
-            if(p.second > tmp.y2) tmp.y2 = p.second;
-        }
-
-        return tmp;
+        if(p.first < tmp.x1) tmp.x1 = p.first;
+        if(p.second < tmp.y1) tmp.y1 = p.second;
+        if(p.first > tmp.x2) tmp.x2 = p.first;
+        if(p.second > tmp.y2) tmp.y2 = p.second;
     }
 
-    inline Element::BoundingBox Rect::get_bbox() {
-        double x = this->x(), y = this->y(),
-            width = this->width(), height = this->height();
-        return { x, x + width, y, y + height };
-    }
+    return tmp;
+}
 
-    inline Element::BoundingBox Circle::get_bbox() {
-        double x = this->x(), y = this->y(), radius = this->radius();
+inline Element::BoundingBox Rect::get_bbox() {
+    double x = this->x(), y = this->y(),
+        width = this->width(), height = this->height();
+    return { x, x + width, y, y + height };
+}
 
-        return {
-            x - radius,
-            x + radius,
-            y - radius,
-            y + radius
-        };
-    }
+inline Element::BoundingBox Circle::get_bbox() {
+    double x = this->x(), y = this->y(), radius = this->radius();
+
+    return {
+        x - radius,
+        x + radius,
+        y - radius,
+        y + radius
+    };
+}
 
     inline std::pair<double, double> Line::along(double percent) {
         /** Return the coordinates required to place an element along
@@ -796,12 +810,13 @@ namespace SVG {
 
         Element::BoundingBox bbox = this->get_bbox();
         this->get_bbox(bbox); // Compute the bounding box (recursive)
-        double width = abs(bbox.x1) + abs(bbox.x2) + margins.x1 + margins.x2,
-            height = abs(bbox.y1) + abs(bbox.y2) + margins.y1 + margins.y2,
-            x1 = bbox.x1 - margins.x1, y1 = bbox.y1 - margins.y1;
+        double width = abs(bbox.x1) + abs(bbox.x2) + margins.x1 + margins.x2;
+        double height = abs(bbox.y1) + abs(bbox.y2) + margins.y1 + margins.y2;
+        double x1 = bbox.x1 - margins.x1;
+        double y1 = bbox.y1 - margins.y1;
 
-        this->set_attr("width", width)
-             .set_attr("height", height);
+        this->set_attr("width", to_string(width) + "mm")
+             .set_attr("height", to_string(height) + "mm");
 
         if (x1 < 0 || y1 < 0) {
             std::stringstream viewbox;
@@ -856,7 +871,7 @@ namespace SVG {
             svg_child->autoscale(margins);
 
         // Set x position for child SVG elements, and compute width/height for this
-        double x = 0, height = 0;
+        double x {0}, height {0};
         for (auto& svg_child: ret.get_immediate_children<SVG>()) {
             svg_child->set_attr("x", x).set_attr("y", 0);
             x += svg_child->width();
@@ -885,7 +900,7 @@ namespace SVG {
          *  max_frame_width: Maximum width of any individual frame
          */
         SVG root;
-        double x = 0, y = 0, total_width = 0, total_height = 0;
+        double x {0}, y {0}, total_width {0}, total_height {0};
         for (auto& frame : frames) {
             // Scale
             frame.autoscale();
@@ -897,7 +912,7 @@ namespace SVG {
         }
 
         // Move
-        double current_height = 0;
+        double current_height {0};
         for (auto& frame : frames) {
             // Push to next row
             if ((x + frame.width()) > width) {
@@ -929,36 +944,35 @@ namespace SVG {
          */
         SVG root;
         const double duration = (double)frames.size() / fps; // [seconds]
-        const double frame_step = 1.0 / fps; // duration of each frame [seconds]
-        int current_frame = 0;
+        int current_frame {0};
 
         root.style("svg.animated").set_attr("animation-iteration-count", "infinite")
             .set_attr("animation-timing-function", "step-end")
-            .set_attr("animation-duration", std::to_string(duration) + "s")
+            .set_attr("animation-duration", to_string(duration) + "s")
             .set_attr("opacity", 0);
 
         // Move frames into new SVG
         for (auto& frame : frames) {
-            std::string frame_id = "frame_" + std::to_string(current_frame);
+            std::string frame_id = "frame_" + to_string(current_frame);
             frame.set_attr("id", frame_id).set_attr("class", "animated");
             root.style("#" + frame_id).set_attr("animation-name",
-                "anim_" + std::to_string(current_frame));
+                "anim_" + to_string(current_frame));
             current_frame++;
             root << std::move(frame);
         }
 
         // Set animation frames
-        for (size_t i = 0, ilen = frames.size(); i < ilen; i++) {
-            auto& anim = root.keyframes("anim_" + std::to_string(i));
+        for (size_t  i {0}, ilen = frames.size(); i < ilen; i++) {
+            auto& anim = root.keyframes("anim_" + to_string(i));
             double begin_pct = (double)i / frames.size(),
                 end_pct = (double)(i + 1) / frames.size();
             anim["0%"].set_attr("opacity", 0);
-            anim[std::to_string(begin_pct * 100) + "%"].set_attr("opacity", 1);
-            anim[std::to_string(end_pct * 100) + "%"].set_attr("opacity", 0);
+            anim[to_string(begin_pct * 100) + "%"].set_attr("opacity", 1);
+            anim[to_string(end_pct * 100) + "%"].set_attr("opacity", 0);
         }
 
         // Scale and center child SVGs
-        double width = 0, height = 0;
+        double width {0}, height {0};
 
         for (auto& child : root.get_immediate_children<SVG>()) {
             child->autoscale();
@@ -966,7 +980,7 @@ namespace SVG {
             height = std::max(height, child->height());
         }
 
-        root.set_attr("viewBox", "0 0 " + std::to_string(width) + " " + std::to_string(height));
+        root.set_attr("viewBox", "0 0 " + to_string(width) + " " + to_string(height));
 
         // Center child SVGs
         for (auto& child : root.get_immediate_children<SVG>())
@@ -975,3 +989,5 @@ namespace SVG {
         return root;
     }
 }
+
+#endif //_SVG_H_
