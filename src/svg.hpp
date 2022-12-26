@@ -423,7 +423,7 @@ namespace SVG {
         };
 
         SVG(SVGAttrib _attr =
-                { { "xmlns:svg", "http://www.w3.org/2000/svg" }, { "xmlns:sodipodi", "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" }, { "xmlns:inkscape", "http://www.inkscape.org/namespaces/inkscape" } }
+                {{"xmlns", "http://www.w3.org/2000/svg"}}
         ) : Shape(_attr) {}; /**< Create an <svg> with specified attributes */
 
         AttributeMap& style(const std::string& key) { return this->css->css[key]; }
@@ -539,13 +539,6 @@ namespace SVG {
         using Element::Element;
     protected:
         std::string tag() override { return "g"; }
-    };
-
-    class NameDev : public Element {
-    public:
-        using Element::Element;
-    protected:
-        std::string tag() override { return "sodipodi:namedview"; }
     };
 
     class Line : public Shape {
