@@ -302,7 +302,7 @@ namespace SVG {
             SVG_TYPE_CHECK;
             std::vector<T*> ret;
             for (auto& child : this->children)
-                if (typeid(*child) == typeid(T)) ret.push_back((T*)child.get());
+                if (typeid(child) == typeid(T)) ret.push_back((T*)child.get());
 
             return ret;
         }
@@ -850,7 +850,7 @@ inline Element::BoundingBox Circle::get_bbox() {
         }
 
         return ret;
-    };
+    }
 
     inline SVG merge(SVG& left, SVG& right, const Margins& margins) {
         /** Merge two SVG documents together horizontally with a uniform margin */
